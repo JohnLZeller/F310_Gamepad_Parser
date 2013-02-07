@@ -38,7 +38,9 @@ class ParserMain(threading.Thread):
 				'LB':0, 'RB':0, 'LT':0, 'RT':0,				\
 				'LJ/Button':0, 'RJ/Button':0, 				\
 				'LJ/Left':0, 'LJ/Right':0, 'LJ/Up':0, 'LJ/Down':0, 	\
-				'RJ/Left':0, 'RJ/Right':0, 'RJ/Up':0, 'RJ/Down':0}
+				'RJ/Left':0, 'RJ/Right':0, 'RJ/Up':0, 'RJ/Down':0,	\
+				'Byte0':0, 'Byte1':0, 'Byte2':0, 'Byte3':0,		\
+				'Byte4':0, 'Byte5':0, 'Byte6':0, 'Byte7':0}
 		# Launch Parser_Core as a seperate thread to parse the gamepad
 		self.parsercore = ParserCore(self.bus, self.states)
 		self.parsercore.start()

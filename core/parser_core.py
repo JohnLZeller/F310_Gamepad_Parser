@@ -45,6 +45,8 @@ class ParserCore(threading.Thread):
 		self.buttons = {'\x00':'A', '\x01':'B', '\x02':'X', '\x03':'Y', \
 				'\x04':'LB', '\x05':'RB', '\x06':'Back', '\x07':'Start', \
 				'\x08':'Middle', '\t':'LJ/Button', '\n':'RJ/Button'}
+		# List of Byte names for states
+		self.bytes = ['Byte0', 'Byte1', 'Byte2', 'Byte3', 'Byte4', 'Byte5', 'Byte6', 'Byte7']
 		# Initializes templist
 		for x in range(8):
 		        self.templist.append(0)
@@ -52,9 +54,10 @@ class ParserCore(threading.Thread):
 	def run(self):
 		# Start Parser
 		while 1:
-			# Read 1 byte
+			# Read 1 byte and copy state to Byte States
 			for x in range(8):
 				self.templist[x] = self.bus.gamepad.read(1)
+				self.states[self.bytes[x]] = repr(self.templist[x])
 				
 			# BUTTON is PRESSED
 			if self.templist[4]=='\x01' or self.templist[4]=='\xFF':
