@@ -61,7 +61,7 @@ class ParserCore(threading.Thread):
 				self.parse_pressed_button()
 				
 			# BUTTON is RELEASED
-			elif self.templist[4]=='\x00' and found==0:
+			if self.templist[4]=='\x00':
 				self.parse_released_button()
 				
 			# JOYSTICK is PRESSED
@@ -130,15 +130,19 @@ class ParserCore(threading.Thread):
 
 	def parse_released_button(self):
 		# Updates states of buttons to 0(off)
-		if self.templist[5]=='\x00': # Letters, Start/Stop, or LJ/RJ Buttons
-			return [self.buttons[self.templist[7]], 0]
-		elif self.templist[5]=='\x80': # D-Pad, Left/Up
-			if self.templist[7]=='\x06': # Left
-				self.states['Left'] = 0
-			elif self.templist[7]=='\x07': # Up
-				self.states['Up'] = 0
-		elif self.templist[5]=='\x7F': # D-Pad, Right/Down
-			if self.templist[7]=='\x06': # Right
-				self.states['Right'] = 0
-			elif self.templist[7]=='\x07': # Down
-				self.states['Down'] = 0
+		if self.templist[5]=='\x00' and self.templist[6]=='\x01': # Letters, Start/Stop, or LJ/RJ Buttons
+			# Check to see if templist[5] is in button list
+			# and if not then see if it is /00 - DPad
+			self.states[self.buttons[self.templist[7]]] = 0
+		elif self.templist[5]=='\x00' and self.templist[6]=='\x02': # D-Pad
+			if self.templist[7]=='\x07': # D-Pad, Up/Down
+				if self.states['Up']==1: # Up
+					self.states['Up'] = 0
+				elif self.states['Down']==1: # Down
+					self.states['Down'] = 0
+			elif self.templist[7]=='\x06': # D-Pad, Left/Right
+				if self.states['Left']==1: # Left
+					self.states['Left'] = 0
+				elif self.states['Right']==1: # Right
+					self.states['Right'] = 0
+		# ADD IN JOY RELEASED
