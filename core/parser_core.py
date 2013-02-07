@@ -12,6 +12,11 @@
 # 	LJ/RJ - Up: 255-128								#
 # 	LJ/RJ - Left: 255-128								#
 # 	LJ/RJ - Right: 0-127								#
+# 4) States are saved as the following values:						#
+# 	LJ/RJ - Down: 0-(-127)								#
+# 	LJ/RJ - Up: 0-127								#
+# 	LJ/RJ - Left: 0-(-127)								#
+# 	LJ/RJ - Right: 0-127								#
 #########################################################################################
 
 ### Buttons/Joys Represented: ###########################################################
@@ -45,8 +50,14 @@ class ParserCore(threading.Thread):
 		self.buttons = {'\x00':'A', '\x01':'B', '\x02':'X', '\x03':'Y', \
 				'\x04':'LB', '\x05':'RB', '\x06':'Back', '\x07':'Start', \
 				'\x08':'Middle', '\t':'LJ/Button', '\n':'RJ/Button'}
+		# List of Joy Names
+		self.joys = ['LT', 'RT', 'LJ/Button', 'RJ/Button', 		\
+			     'LJ/Left', 'LJ/Right', 'LJ/Up', 'LJ/Down', 	\
+			     'RJ/Left', 'RJ/Right', 'RJ/Up', 'RJ/Down']
 		# List of Byte names for states
 		self.bytes = ['Byte0', 'Byte1', 'Byte2', 'Byte3', 'Byte4', 'Byte5', 'Byte6', 'Byte7']
+		self.bytes_int = ['Byte0/INT', 'Byte1/INT', 'Byte2/INT', 'Byte3/INT', \
+			      'Byte4/INT', 'Byte5/INT', 'Byte6/INT', 'Byte7/INT']
 		# Initializes templist
 		for x in range(8):
 		        self.templist.append(0)
@@ -57,7 +68,8 @@ class ParserCore(threading.Thread):
 			# Read 1 byte and copy state to Byte States
 			for x in range(8):
 				self.templist[x] = self.bus.gamepad.read(1)
-				self.states[self.bytes[x]] = repr(self.templist[x])
+				self.states[self.bytes[x]] = repr(self.templist[x])	# String Bytes
+				self.states[self.bytes_int[x]] = ord(self.templist[x])	# Int Bytes
 				
 			# BUTTON is PRESSED
 			if self.templist[4]=='\x01' or self.templist[4]=='\xFF':
@@ -70,10 +82,21 @@ class ParserCore(threading.Thread):
 			# JOYSTICK is PRESSED
 			else:
 				self.parse_pressed_joy()
+				self.sanitize_joys()
+
+	def sanitize_joys(self):
+		# Adjusts the joy states when close to 0, to make sure 0 happens
+		for joy in self.joys:
+			value = self.states[joy]
+			if (value <= 20) and (value > 0):
+				self.states[joy] = 0
+			elif (value >= -20) and (value < 0):
+				self.states[joy] = 0
+		
 
 	def parse_pressed_button(self):
 		# Updates states of buttons to 1 (on)
-		if self.templist[6]=='\x01' and self.templist[5]=='\x00': # Letters, Start/Back or LJ/RJ Buttons
+		if self.templist[6]=='\x01' and self.templist[5]=='\x00': # Letters, Start/Back
 			self.states[self.buttons[self.templist[7]]] = 1
 		elif self.templist[6]=='\x02' and self.templist[5]=='\x80': # D-Pad L/U
 			if self.templist[7]=='\x06': # Left
@@ -87,48 +110,48 @@ class ParserCore(threading.Thread):
 				self.states['Down'] = 1
 
 	def parse_pressed_joy(self):
-		# Updates joy states with values 0-255
+		# Updates joy states with values 0-255 as ints
 		if self.templist[7]=='\x02' and self.templist[6]=='\x02': # LT
 			if ord(self.templist[5])>=128:
-				val = str(ord(self.templist[5]) - 128)
+				val = ord(self.templist[5]) - 128
 				self.states['LT'] = val
 			elif ord(self.templist[5])<=127:
-				val = str(ord(self.templist[5]) + 127)
+				val = ord(self.templist[5]) + 127
 				self.states['LT'] = val
 		elif self.templist[7]=='\x05' and self.templist[6]=='\x02': # RT
 			if ord(self.templist[5])>=128:
-				val = str(ord(self.templist[5]) - 128)
+				val = ord(self.templist[5]) - 128
 				self.states['RT'] = val
 			elif ord(self.templist[5])<=127:
-				val = str(ord(self.templist[5]) + 127)
+				val = ord(self.templist[5]) + 127
 				self.states['RT'] = val
 		elif self.templist[7]=='\x00' and self.templist[6]=='\x02': # Left-Joy L/R
 			if ord(self.templist[5])<=127: # Right
-				val = str(ord(self.templist[5]))
+				val = ord(self.templist[5])
 				self.states['LJ/Right'] = val
 			elif ord(self.templist[5])>=128: # Left
-				val = str(ord(self.templist[5]))
+				val = ord(self.templist[5]) - 255
 				self.states['LJ/Left'] = val
 		elif self.templist[7]=='\x01' and self.templist[6]=='\x02': # Left-Joy U/D
 			if ord(self.templist[5])<=127: # Down
-				val = str(ord(self.templist[5]))
+				val = -(ord(self.templist[5]))		# Flip to negative
 				self.states['LJ/Down'] = val
 			elif ord(self.templist[5])>=128: # Up
-				val = str(ord(self.templist[5]) - 255)
+				val = (ord(self.templist[5]) - 255) * -1	# Flip to positive
 				self.states['LJ/Up'] = val
 		elif self.templist[7]=='\x03' and self.templist[6]=='\x02': # Right-Joy L/R
 			if ord(self.templist[5])<=127: # Right
-				val = str(ord(self.templist[5]))
+				val = ord(self.templist[5])
 				self.states['RJ/Right'] = val
 			elif ord(self.templist[5])>=128: # Left
-				val = str(ord(self.templist[5]) - 255)
+				val = ord(self.templist[5]) - 255
 				self.states['RJ/Left'] = val
 		elif self.templist[7]=='\x04' and self.templist[6]=='\x02': # Right-Joy U/D
 			if ord(self.templist[5])<=127: # Down
-				val = str(ord(self.templist[5]))
+				val = -(ord(self.templist[5]))		# Flip to negative
 				self.states['RJ/Down'] = val
 			elif ord(self.templist[5])>=128: # Up
-				val = str(ord(self.templist[5]) - 255)
+				val = (ord(self.templist[5]) - 255) * -1	# Flip to positive
 				self.states['RJ/Up'] = val
 
 	def parse_released_button(self):
