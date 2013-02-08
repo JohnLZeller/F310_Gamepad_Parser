@@ -51,7 +51,7 @@ class ParserCore(threading.Thread):
 				'\x04':'LB', '\x05':'RB', '\x06':'Back', '\x07':'Start', \
 				'\x08':'Middle', '\t':'LJ/Button', '\n':'RJ/Button'}
 		# List of Joy Names
-		self.joys = ['LT', 'RT', 'LJ/Button', 'RJ/Button', 		\
+		self.joys = ['LT', 'RT', 					\
 			     'LJ/Left', 'LJ/Right', 'LJ/Up', 'LJ/Down', 	\
 			     'RJ/Left', 'RJ/Right', 'RJ/Up', 'RJ/Down']
 		# List of Byte names for states
